@@ -1,11 +1,12 @@
 //! Boot-up module
 
+// Boot function for the hart 0. It will first initialize all the system, then wake 
+// all other harts available.
 extern "C" fn boot_hart_main(hart_id: usize, opaque: usize) {
-    drop(hart_id);
-    drop(opaque);
+    println!("hart id = {:x}, opaque = {:x}", hart_id, opaque);
+    loop {}
 }
 
-#[allow(unused)] // should remove 
 extern "C" fn other_hart_main(hart_id: usize, opaque: usize) {
     drop(hart_id);
     drop(opaque);
