@@ -6,20 +6,9 @@ extern "C" fn boot_hart_main(hart_id: usize, opaque: usize) {
 }
 
 #[allow(unused)] // should remove 
-/* This function should be called by function sbi_hart_start(hartid, **start_addr**, opaque)*/
-unsafe extern "C" fn hart_join(_hart_id: usize, _opaque: usize) {
-    asm!(
-        // Load hart stack pointer
-        "mv     sp, a1", // should there be more initialize parameters other than stack pointer?
-        // Skip to main function of other harts
-        "j      {hart_join_main}",
-        hart_join_main = sym hart_join_main,
-    )
-}
-
-#[allow(unused)] // should remove 
-extern "C" fn hart_join_main() {
-
+extern "C" fn other_hart_main(hart_id: usize, opaque: usize) {
+    drop(hart_id);
+    drop(opaque);
 }
 
 // Only one hart would use the boot stack; the hart 0 should initialize a memory allocator
@@ -49,14 +38,17 @@ static mut BOOT_STACK: [u8; BOOT_STACK_SIZE] = [0; BOOT_STACK_SIZE];
 #[export_name = "_start"]
 unsafe extern "C" fn entry() -> ! {
     asm!(
-    // in QEMU, for non-boot hart, should report its existence to the system
+    // in QEMU, for non-boot hart, should wait for software interrupt
     "
     beqz    a0, 1f
-    2: j 2b # todo
-1:  ",
+    wfi",
+    // Load hart stack pointer
+    "ld     sp, 0(a1)", // should there be more initialize parameters other than stack pointer?
+    // Skip to main function of other harts
+    "j      {other_hart_main}",
     // for boot hart, set sp
     "
-    la      sp, {boot_stack}
+1:  la      sp, {boot_stack}
     li      t0, {boot_stack_size}
     add     sp, sp, t0
     ",
@@ -65,5 +57,6 @@ unsafe extern "C" fn entry() -> ! {
     boot_stack_size = const BOOT_STACK_SIZE,
     boot_stack = sym BOOT_STACK, 
     boot_hart_main = sym boot_hart_main,
+    other_hart_main = sym other_hart_main,
     options(noreturn))
 }
