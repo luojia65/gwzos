@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "gwzos-kernel"
+    "gwzos-kernel",
+    "gwzos-riscv-qemu",
 ]
